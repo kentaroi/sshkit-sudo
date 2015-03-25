@@ -25,9 +25,16 @@ module SSHKit
                   cmd.stdout = data
                   cmd.full_stdout += data
                   output << cmd
-
+                  if data =~ /Sorry.*\stry\sagain/
+                    SSHKit::Sudo.password_cache[password_cache_key(cmd.host)] = nil
+                  end
                   if data =~ /password.*:/
-                    pass = $stdin.noecho(&:gets)
+                    key = password_cache_key(cmd.host)
+                    pass = SSHKit::Sudo.password_cache[key]
+                    unless pass
+                      pass = $stdin.noecho(&:gets)
+                      SSHKit::Sudo.password_cache[key] = pass
+                    end
                     ch.send_data(pass)
                   end
                 end
@@ -68,6 +75,10 @@ module SSHKit
             output << cmd
           end
         end
+      end
+
+      def password_cache_key(host)
+        "#{host.user}@#{host.hostname}"
       end
     end
   end
