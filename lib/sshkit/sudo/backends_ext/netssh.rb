@@ -7,13 +7,17 @@ module SSHKit
 
     class Netssh < Printer
       def sudo(*args)
-        _sudo(*args).success?
+        _execute!(:sudo, *args).success?
+      end
+
+      def execute!(*args)
+        _execute!(*args).success?
       end
 
       private
 
-      def _sudo(*args)
-        command(:sudo, *args).tap do |cmd|
+      def _execute!(*args)
+        command(*args).tap do |cmd|
           output << cmd
           cmd.started = true
           exit_status = nil

@@ -8,6 +8,8 @@ module SSHKit
           output << cmd
         end
       end
+
+      alias execute! execute
     end
   end
 end

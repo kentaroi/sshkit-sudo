@@ -6,6 +6,8 @@ module SSHKit
       def sudo(*args)
         _execute(:sudo, *args).success?
       end
+
+      alias execute! execute
     end
   end
 end
