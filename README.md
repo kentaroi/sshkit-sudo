@@ -22,16 +22,55 @@ require 'sshkit/sudo'
 
 ## Usage
 
-This gem adds `sudo` command to SSHKit backends.
+This gem adds `sudo`  and `execute!` command to SSHKit backends.
 
 To execute a command with sudo, call `sudo` instead of `execute`.
 
 ```ruby
+sudo :cp, '~/something', '/something'
+
+# Or as follows:
+execute! :sudo, :cp, '~/something', '/something'
+```
+
+### Examples in Capistrano tasks
+
+```ruby
 # Executing a command with sudo in Capistrano task
-desc 'hello'
-task :hello do
-  on roles(:all) do
-    sudo :cp, '~/something', '/something'
+namespace :nginx do
+  desc 'Reload nginx'
+  task :reload do
+    on roles(:web), in: :sequence do
+      sudo :service, :nginx, :reload
+    end
+  end
+
+  desc 'Restart nginx'
+  task :restart do
+    on roles(:web), in: :sequence do
+      execute! :sudo, :service, :nginx, :restart
+    end
+  end
+end
+
+namespace :prov do
+  desc 'Install nginx'
+  task :nginx do
+    on roles(:web), in: :sequence do
+
+      within '/etc/apt' do
+        unless test :grep, '-Fxq', '"deb http://nginx.org/packages/debian/ wheezy nginx"', 'sources.list'
+          execute! :echo, '"deb http://nginx.org/packages/debian/ wheezy nginx"', '|', 'sudo tee -a sources.list'
+          execute! :echo, '"deb-src http://nginx.org/packages/debian/ wheezy nginx"', '|', 'sudo tee -a sources.list'
+
+          execute! :wget, '-q0 - http://nginx.org/keys/nginx_signing.key', '|', 'sudo apt-key add -'
+
+          sudo :'apt-get', :update
+        end
+      end
+
+      sudo :'apt-get', '-y install nginx'
+    end
   end
 end
 ```
