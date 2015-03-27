@@ -1,7 +1,3 @@
-# require 'net/ssh'
-require 'sshkit'
-# require 'sshkit/backend/netssh'
-
 module SSHKit
   module Backend
 
