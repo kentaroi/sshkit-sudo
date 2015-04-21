@@ -2,41 +2,23 @@ module SSHKit
   module Backend
 
     class Netssh < Printer
-      def sudo(*args)
-        _execute!(:sudo, *args).success?
-      end
-
-      def execute!(*args)
-        _execute!(*args).success?
-      end
 
       private
 
-      def _execute!(*args)
+      def _execute(*args)
         command(*args).tap do |cmd|
           output << cmd
           cmd.started = true
           exit_status = nil
           with_ssh do |ssh|
             ssh.open_channel do |chan|
-              chan.request_pty
+              chan.request_pty unless (pty_handler = cmd.options[:pty_handler]).nil?
               chan.exec cmd.to_command do |ch, success|
                 chan.on_data do |ch, data|
                   cmd.stdout = data
                   cmd.full_stdout += data
                   output << cmd
-                  if data =~ /Sorry.*\stry\sagain/
-                    SSHKit::Sudo.password_cache[password_cache_key(cmd.host)] = nil
-                  end
-                  if data =~ /password.*:/
-                    key = password_cache_key(cmd.host)
-                    pass = SSHKit::Sudo.password_cache[key]
-                    unless pass
-                      pass = $stdin.noecho(&:gets)
-                      SSHKit::Sudo.password_cache[key] = pass
-                    end
-                    ch.send_data(pass)
-                  end
+                  pty_handler.call(data, ch, cmd) unless pty_handler.nil?
                 end
                 chan.on_extended_data do |ch, type, data|
                   cmd.stderr = data
