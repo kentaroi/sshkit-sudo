@@ -22,15 +22,12 @@ require 'sshkit/sudo'
 
 ## Usage
 
-This gem adds `sudo`  and `execute!` command to SSHKit backends.
+This gem adds a `:pty_handler` option to commands.
 
-To execute a command with sudo, call `sudo` instead of `execute`.
+To execute a command with interactive sudo add the `:pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO` option.
 
 ```ruby
-sudo :cp, '~/something', '/something'
-
-# Or as follows:
-execute! :sudo, :cp, '~/something', '/something'
+execute :sudo, :cp, '~/something', '/something', :pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO
 ```
 
 ### Examples in Capistrano tasks
@@ -41,14 +38,14 @@ namespace :nginx do
   desc 'Reload nginx'
   task :reload do
     on roles(:web), in: :sequence do
-      sudo :service, :nginx, :reload
+      execute :sudo, :service, :nginx, :reload, :pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO
     end
   end
 
   desc 'Restart nginx'
   task :restart do
     on roles(:web), in: :sequence do
-      execute! :sudo, :service, :nginx, :restart
+      execute :sudo, :service, :nginx, :restart, :pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO
     end
   end
 end
@@ -60,16 +57,16 @@ namespace :prov do
 
       within '/etc/apt' do
         unless test :grep, '-Fxq', '"deb http://nginx.org/packages/debian/ wheezy nginx"', 'sources.list'
-          execute! :echo, '"deb http://nginx.org/packages/debian/ wheezy nginx"', '|', 'sudo tee -a sources.list'
-          execute! :echo, '"deb-src http://nginx.org/packages/debian/ wheezy nginx"', '|', 'sudo tee -a sources.list'
+          execute :echo, '"deb http://nginx.org/packages/debian/ wheezy nginx"', '|', 'sudo tee -a sources.list', :pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO
+          execute :echo, '"deb-src http://nginx.org/packages/debian/ wheezy nginx"', '|', 'sudo tee -a sources.list', :pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO
 
-          execute! :wget, '-q0 - http://nginx.org/keys/nginx_signing.key', '|', 'sudo apt-key add -'
+          execute :wget, '-q0 - http://nginx.org/keys/nginx_signing.key', '|', 'sudo apt-key add -', :pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO
 
-          sudo :'apt-get', :update
+          sudo :sudo, 'apt-get', :update, :pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO
         end
       end
 
-      sudo :'apt-get', '-y install nginx'
+      execute :sudo, :'apt-get', '-y install nginx', :pty_handler => SSHKit::Sudo::INTERACTIVE_SUDO
     end
   end
 end
