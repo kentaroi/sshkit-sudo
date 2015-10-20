@@ -30,7 +30,7 @@ module SSHKit
                   if data =~ /Sorry.*\stry\sagain/
                     SSHKit::Sudo.password_cache[password_cache_key(cmd.host)] = nil
                   end
-                  if data =~ /password.*:/
+                  if data =~ /[Pp]assword.*:/
                     key = password_cache_key(cmd.host)
                     pass = SSHKit::Sudo.password_cache[key]
                     unless pass
