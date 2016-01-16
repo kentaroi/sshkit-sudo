@@ -1,8 +1,8 @@
 require "sshkit/sudo/version"
 require 'sshkit'
-require "sshkit/sudo/backends_ext/printer"
-require "sshkit/sudo/backends_ext/netssh"
-require "sshkit/sudo/backends_ext/local"
+require 'sshkit/sudo/interaction_handler'
+require 'sshkit/sudo/backends/abstract'
+require 'sshkit/sudo/backends/netssh'
 
 module SSHKit
   module Sudo
@@ -10,4 +10,7 @@ module SSHKit
       @password_cache ||= {}
     end
   end
+
+  Backend::Abstract.send(:include, ::SSHKit::Sudo::Backend::Abstract)
+  Backend::Netssh.send(:include, ::SSHKit::Sudo::Backend::Netssh)
 end
