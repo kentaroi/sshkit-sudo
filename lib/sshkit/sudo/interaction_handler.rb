@@ -6,6 +6,9 @@ module SSHKit
 
       def on_data(command, stream_name, data, channel)
         if data =~ wrong_password
+          puts data if defined?(Airbrussh) and
+                       Airbrussh.configuration.command_output != :stdout and
+                       data !~ password_prompt
           SSHKit::Sudo.password_cache[password_cache_key(command.host)] = nil
         end
         if data =~ password_prompt
