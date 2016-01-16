@@ -75,6 +75,50 @@ namespace :prov do
 end
 ```
 
+### Configuration
+Available in sshkit-sudo 0.1.0 and later.
+
+#### Same password across servers
+If you are using a same password across all servers, you can skip inputting the password for the second server or after
+by using `use_same_password!` method in your `deploy.rb` as follows:
+```ruby
+class SSHKit::Sudo::InteractionHandler
+  use_same_password!
+end
+```
+
+#### Password prompt and wrong password matchers
+You can set your own matchers in your `deploy.rb` as follows:
+```ruby
+class SSHKit::Sudo::InteractionHandler
+  password_prompt_regexp /[Pp]assword.*:/
+  wrong_password_regexp /Sorry.*\stry\sagain/
+end
+```
+
+#### Making your own handler
+You can write your own handler in your `deploy.rb` as follows:
+```ruby
+class SSHKit::Sudo::InteractionHandler
+  def on_data(command, stream_name, data, channel)
+    if data =~ wrong_password
+      SSHKit::Sudo.password_cache[password_cache_key(command.host)] = nil
+    end
+    if data =~ password_prompt
+      key = password_cache_key(command.host)
+      pass = SSHKit::Sudo.password_cache[key]
+      unless pass
+        print data
+        pass = $stdin.noecho(&:gets)
+        puts ''
+        SSHKit::Sudo.password_cache[key] = pass
+      end
+      channel.send_data(pass)
+    end
+  end
+end
+```
+
 ## Contributing
 
 1. Fork it ( https://github.com/[my-github-username]/sshkit-sudo/fork )
