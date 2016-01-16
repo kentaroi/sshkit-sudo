@@ -1,11 +1,14 @@
 module SSHKit
   module Sudo
     class DefaultInteractionHandler
+      def wrong_password; self.class.wrong_password; end
+      def password_prompt; self.class.password_prompt; end
+
       def on_data(command, stream_name, data, channel)
-        if data =~ /Sorry.*\stry\sagain/
+        if data =~ wrong_password
           SSHKit::Sudo.password_cache[password_cache_key(command.host)] = nil
         end
-        if data =~ /[Pp]assword.*:/
+        if data =~ password_prompt
           key = password_cache_key(command.host)
           pass = SSHKit::Sudo.password_cache[key]
           unless pass
@@ -23,6 +26,22 @@ module SSHKit
       end
 
       class << self
+        def wrong_password
+          @wrong_password ||= /Sorry.*\stry\sagain/
+        end
+
+        def password_prompt
+          @password_prompt ||= /[Pp]assword.*:/
+        end
+
+        def wrong_password_regexp(regexp)
+          @wrong_password = regexp
+        end
+
+        def password_prompt_regexp(regexp)
+          @password_prompt = regexp
+        end
+
         def use_same_password!
           class_eval <<-METHOD, __FILE__, __LINE__ + 1
           def password_cache_key(host)
