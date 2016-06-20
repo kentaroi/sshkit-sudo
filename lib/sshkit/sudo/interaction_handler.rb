@@ -1,6 +1,8 @@
 module SSHKit
   module Sudo
     class DefaultInteractionHandler
+      MUTEX = Mutex.new
+
       def wrong_password; self.class.wrong_password; end
       def password_prompt; self.class.password_prompt; end
 
@@ -12,15 +14,17 @@ module SSHKit
           SSHKit::Sudo.password_cache[password_cache_key(command.host)] = nil
         end
         if data =~ password_prompt
-          key = password_cache_key(command.host)
-          pass = SSHKit::Sudo.password_cache[key]
-          unless pass
-            print data
-            pass = $stdin.noecho(&:gets)
-            puts ''
-            SSHKit::Sudo.password_cache[key] = pass
+          MUTEX.synchronize do
+            key = password_cache_key(command.host)
+            pass = SSHKit::Sudo.password_cache[key]
+            unless pass
+              print data
+              pass = $stdin.noecho(&:gets)
+              puts ''
+              SSHKit::Sudo.password_cache[key] = pass
+            end
+            channel.send_data(pass)
           end
-          channel.send_data(pass)
         end
       end
 
